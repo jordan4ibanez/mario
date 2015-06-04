@@ -1,5 +1,15 @@
 --table for breaking aesthetic
 breakage = {}
+jumpage  = {}
+lastpos  = {}
+lastjump = {}
+
+minetest.register_on_joinplayer(function(player)
+	print(player:get_player_name())
+	player:set_physics_override({gravity = 1,jump = 3})
+end)
+
+
 minetest.register_globalstep(function(dtime)
 	for _,player in ipairs(minetest.get_connected_players()) do
 		if player:get_hp() > 0 or not minetest.setting_getbool("enable_damage") then
@@ -50,6 +60,8 @@ minetest.register_globalstep(function(dtime)
 		if player:get_hp() > 0 or not minetest.setting_getbool("enable_damage") then
 			local pos = player:getpos()
 			local inv = player:get_inventory()
+
+
 			--collect coins
 			for _,object in ipairs(minetest.env:get_objects_inside_radius(pos, 1)) do
 				if not object:is_player() and object:get_luaentity() and object:get_luaentity().name == "__builtin:item" then
@@ -67,6 +79,40 @@ minetest.register_globalstep(function(dtime)
 					end
 				end
 			end
+			
+		end
+	end
+end)
+
+minetest.register_globalstep(function(dtime)
+	for _,player in ipairs(minetest.get_connected_players()) do
+		if player:get_hp() > 0 or not minetest.setting_getbool("enable_damage") then
+			local pos = player:getpos()
+
+			minetest.after(0.0,function()
+				local newpos = player:getpos()
+				--activate the noise thing
+				if lastpos[player:get_player_name()] ~= nil then
+					if lastpos[player:get_player_name()].y < newpos.y and lastjump[player:get_player_name()] == true and (jumpage[player:get_player_name()] == false or jumpage[player:get_player_name()] == nil) then				
+
+						minetest.sound_play("jump", {
+							pos = pos,
+							max_hear_distance = 20,
+							gain = 1.0,
+						})
+						jumpage[player:get_player_name()] = true
+					end
+					--print(lastpos[player:get_player_name()].y.." "..pos.y)
+					if lastpos[player:get_player_name()].y == newpos.y and minetest.get_node({x=math.floor(pos.x+0.5), y=pos.y-0.3, z=math.floor(pos.z+0.5)}).name ~= "air" then
+
+						jumpage[player:get_player_name()] = false
+					end
+				end
+			end)
+
+			lastpos[player:get_player_name()] = pos
+			lastjump[player:get_player_name()] = player:get_player_control().jump
+			
 		end
 	end
 end)
